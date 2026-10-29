@@ -1,0 +1,86 @@
+x-sigil: &sigil
+  build:
+    context: ..
+    dockerfile: deploy/Dockerfile
+  image: sigil:0.22
+  restart: unless-stopped
+
+services:
+  kms:
+    <<: *sigil
+    command: python -m sigil.kms
+    environment:
+      SIGIL_KMS_DIR: /kms
+      SIGIL_KMS_TOKEN_FILE: /run/sigil-kms-token
+    volumes:
+      - ./runtime/keys/kms:/kms:ro
+      - ./runtime/keys/kms/token:/run/sigil-kms-token:ro
+    ports:
+      - "127.0.0.1:19103:18103"
+
+  gate:
+    <<: *sigil
+    command: python -m sigil.gate
+    depends_on: [kms]
+    environment:
+      SIGIL_DATA: /data
+      SIGIL_EFFECTS: /effects
+      SIGIL_PUB_DIR: /pub
+      SIGIL_KMS_URL: http://kms:18103
+      SIGIL_KMS_TOKEN_FILE: /run/sigil-kms-token
+      SIGIL_CONTROL_TOKEN_FILE: /run/sigil-control-token
+      SIGIL_APPROVER_TOKEN_FILE: /run/sigil-approver-token
+    volumes:
+      - ./runtime/data:/data
+      - ./runtime/effects:/effects
+      - ./runtime/keys/pub:/pub:ro
+      - ./runtime/keys/kms/token:/run/sigil-kms-token:ro
+      - ./runtime/keys/control_token:/run/sigil-control-token:ro
+      - ./runtime/keys/approver_token:/run/sigil-approver-token:ro
+    ports:
+      - "127.0.0.1:19100:18100"
+
+  verify:
+    <<: *sigil
+    command: python -m sigil.verify
+    environment:
+      SIGIL_PUB_DIR: /pub
+    volumes:
+      - ./runtime/keys/pub:/pub:ro
+    ports:
+      - "127.0.0.1:19101:18101"
+
+  anchor:
+    <<: *sigil
+    command: python -m sigil.anchor
+    depends_on: [gate, kms]
+    environment:
+      SIGIL_DATA: /data
+      SIGIL_EFFECTS: /effects
+      SIGIL_PUB_DIR: /pub
+      SIGIL_KMS_URL: http://kms:18103
+      SIGIL_KMS_TOKEN_FILE: /run/sigil-kms-token
+      SIGIL_GATE: http://gate:18100
+      SIGIL_ANCHOR_STRICT_SEQ: "1"
+      SIGIL_TSA_ENABLE: "0"
+      SIGIL_CONTROL_TOKEN_FILE: /run/sigil-control-token
+    volumes:
+      - ./runtime/data:/data
+      - ./runtime/effects:/effects
+      - ./runtime/keys/pub:/pub:ro
+      - ./runtime/keys/kms/token:/run/sigil-kms-token:ro
+      - ./runtime/keys/control_token:/run/sigil-control-token:ro
+    ports:
+      - "127.0.0.1:19102:18102"
+
+  context:
+    <<: *sigil
+    command: python -m sigil.context_gateway
+    environment:
+      SIGIL_CTX_DIR: /data/ctx
+      SIGIL_CONTROL_TOKEN_FILE: /run/sigil-control-token
+    volumes:
+      - ./runtime/data:/data
+      - ./runtime/keys/control_token:/run/sigil-control-token:ro
+    ports:
+      - "127.0.0.1:19120:18120"
