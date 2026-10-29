@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sigil-profile"
-version = "0.22.0"
+version = "0.22.1"
 description = "SIGIL/1 proof-carrying execution profile: gate, verify, anchor, MCP middleware, A2A helpers"
 requires-python = ">=3.10"
 dependencies = [
