@@ -1,0 +1,242 @@
+{
+  "v": 1,
+  "cases": [
+    {
+      "id": "jcs.basic",
+      "kind": "jcs_sha",
+      "input": {
+        "obj": {
+          "b": 1,
+          "a": "č",
+          "n": 1.0
+        }
+      },
+      "expected": {
+        "canonical": "{\"a\":\"č\",\"b\":1,\"n\":1}",
+        "sha256": "69acc15d3892429ac7ed64dc81b20922d26deae460541d6db88c6b59d959fb90"
+      }
+    },
+    {
+      "id": "jcs.nested",
+      "kind": "jcs_sha",
+      "input": {
+        "obj": {
+          "z": [
+            1,
+            {
+              "y": true,
+              "x": null
+            }
+          ],
+          "a": "ž"
+        }
+      },
+      "expected": {
+        "canonical": "{\"a\":\"ž\",\"z\":[1,{\"x\":null,\"y\":true}]}",
+        "sha256": "8a09334ba1ec4a4880b6257e3738f09c1f036dab4bdb164a5a0d472c794e01b9"
+      }
+    },
+    {
+      "id": "policy.allow",
+      "kind": "policy_hash",
+      "input": {
+        "policy": {
+          "decision": "allow",
+          "rule_ids": [
+            "allow_read_echo_counter"
+          ]
+        }
+      },
+      "expected": {
+        "sha256": "5bc5c0d1083e9c10b1fcfee7bc2818e9ab42d6120dcc5006d2f26be9d97b7332"
+      }
+    },
+    {
+      "id": "path.0",
+      "kind": "path_prefix",
+      "input": {
+        "prefix": "/ok",
+        "path": "ok/a.txt"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "path.1",
+      "kind": "path_prefix",
+      "input": {
+        "prefix": "/ok",
+        "path": "okevil/a.txt"
+      },
+      "expected": {
+        "ok": false
+      }
+    },
+    {
+      "id": "path.2",
+      "kind": "path_prefix",
+      "input": {
+        "prefix": "/ok",
+        "path": "ok/../okevil/a.txt"
+      },
+      "expected": {
+        "ok": false
+      }
+    },
+    {
+      "id": "path.3",
+      "kind": "path_prefix",
+      "input": {
+        "prefix": "/ok",
+        "path": "ok"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "path.4",
+      "kind": "path_prefix",
+      "input": {
+        "prefix": "/ok",
+        "path": "/ok/a"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "entry.normalize",
+      "kind": "entry_norm",
+      "input": {
+        "entry": {
+          "k": "prompt:1",
+          "t": "text/plain",
+          "b": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "session_id": "x",
+          "ts": 1,
+          "text": "ignored"
+        }
+      },
+      "expected": {
+        "normalized": {
+          "k": "prompt:1",
+          "t": "text/plain",
+          "b": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "id": "receipt.hash",
+      "kind": "receipt_hash",
+      "input": {
+        "receipt": {
+          "v": "1",
+          "receipt_id": "r1",
+          "intent_id": "i1",
+          "intent_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "route_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "grant_id": "g1",
+          "policy": {
+            "decision": "allow",
+            "rule_ids": [
+              "x"
+            ],
+            "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          },
+          "executor": {
+            "kind": "local",
+            "id": "echo",
+            "version": "1.0",
+            "sandbox": "lab"
+          },
+          "effects": [],
+          "result": {
+            "echo": "x"
+          },
+          "result_digest": "19148ee29ca23df099017107d7c168644ea7b9f148747b095c0f3729fe9d1a5f",
+          "status": "ok",
+          "nondet_used": [],
+          "chain_id": "lab",
+          "prev_hash": "GENESIS"
+        }
+      },
+      "expected": {
+        "sha256": "c813a569057fc26f99eabe20919b91560599504a0d40f5e8707ac65451d5eca9"
+      }
+    },
+    {
+      "id": "schema.valid",
+      "kind": "schema",
+      "input": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "args": {
+          "text": "x"
+        }
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "schema.missing",
+      "kind": "schema",
+      "input": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "args": {
+          "wrong": 1
+        }
+      },
+      "expected": {
+        "ok": false
+      }
+    },
+    {
+      "id": "schema.type",
+      "kind": "schema",
+      "input": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "args": {
+          "text": 1
+        }
+      },
+      "expected": {
+        "ok": false
+      }
+    }
+  ]
+}
