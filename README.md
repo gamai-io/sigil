@@ -78,6 +78,41 @@ Each service is a small FastAPI app; see `deploy/` for Docker and compose exampl
 - **Trust boundary**: the KMS/keys and the anchor log are the roots of trust.
   Protect them; rotate keys with `sigil-rotate`.
 
+## Invoice-to-ERP demo (proof, not a claim)
+
+`examples/invoice_erp_demo.py` is a self-contained synthetic workflow:
+
+```
+invoice math -> capability grant -> idempotent claim -> ERP write
+             -> signed receipt -> anchor -> independent verify -> replay/tamper
+```
+
+Run it with services started in a temporary runtime:
+
+```bash
+python3 examples/invoice_erp_demo.py --start
+```
+
+Measured output on 2026-10-29 (Python 3.12, Contabo):
+
+```text
+[1] invoice MOCK-2026-001: net=64.50 vat=10.97 total=75.47 -> math ok
+[2] grant ... bound to intent, max_uses=1
+[3] idempotent claim reserved: invoice-MOCK-2026-001
+[4] ERP write: /tmp/sigil-erp-.../MOCK-2026-001.json
+[5] receipt 57e5836ccf38c642... recorded
+[6] independent verify: valid=True errors=[]
+[7] anchor ... verify={'valid': True, ...}
+[8] same idempotency key -> replayed=True (no second effect)
+[9] tampered receipt -> valid=False errors=['E_SIGNATURE', 'E_RESULT_DIGEST']
+RESULT: PASS
+```
+
+It uses synthetic data and a temporary JSON "ERP"; it does not connect to a
+production ERP and does not claim OCR accuracy. The point is the trust path:
+the same invoice cannot be posted twice, the result is signed, and a changed
+receipt is rejected.
+
 ## Conformance
 
 `sigil-conformance` exercises grants, idempotency, replay, tampering, chain breaks,
