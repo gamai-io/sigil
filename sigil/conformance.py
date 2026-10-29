@@ -8,12 +8,17 @@ VERIFY = "http://127.0.0.1:18101"
 ANCHOR = "http://127.0.0.1:18102"
 EFFECTS = "/tmp/sigil_lab/effects"
 DATA = "/tmp/sigil_lab/data"
-CONTROL_TOKEN = open(os.environ.get("SIGIL_CONTROL_TOKEN_FILE",
-                                    "/tmp/sigil_lab/keys/control_token")).read().strip()
-APPROVER_TOKEN = open(os.environ.get("SIGIL_APPROVER_TOKEN_FILE",
-                                     "/tmp/sigil_lab/keys/approver_token")).read().strip()
-CLIENT = httpx.Client(timeout=15, headers={"X-SIGIL-Token": CONTROL_TOKEN})
-ACLIENT = httpx.Client(timeout=15, headers={"X-SIGIL-Token": APPROVER_TOKEN})
+def _read_token(env_name: str, default_path: str) -> str:
+    """Read an optional lab token; never fail at import time."""
+    try:
+        return open(os.environ.get(env_name, default_path), encoding="utf-8").read().strip()
+    except OSError:
+        return ""
+
+CONTROL_TOKEN = _read_token("SIGIL_CONTROL_TOKEN_FILE", "/tmp/sigil_lab/keys/control_token")
+APPROVER_TOKEN = _read_token("SIGIL_APPROVER_TOKEN_FILE", "/tmp/sigil_lab/keys/approver_token")
+CLIENT = httpx.Client(timeout=15, headers={"X-SIGIL-Token": CONTROL_TOKEN} if CONTROL_TOKEN else {})
+ACLIENT = httpx.Client(timeout=15, headers={"X-SIGIL-Token": APPROVER_TOKEN} if APPROVER_TOKEN else {})
 RESULTS = []
 
 VERBOSE = True
