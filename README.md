@@ -95,7 +95,7 @@ Run it with services started in a temporary runtime:
 python3 examples/invoice_erp_demo.py --start
 ```
 
-Measured output on 2026-10-29 (Python 3.12, VM):
+Measured output on 2026-10-29 (Python 3.12, Linux x86_64):
 
 ```text
 [1] invoice MOCK-2026-001: net=64.50 vat=10.97 total=75.47 -> math ok
