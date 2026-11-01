@@ -1,3 +1,5 @@
+[![CI](https://github.com/gamai-io/sigil/actions/workflows/ci.yml/badge.svg)](https://github.com/gamai-io/sigil/actions/workflows/ci.yml)
+
 # SIGIL/1 — Proof-Carrying Execution for AI Agents
 
 SIGIL/1 is a **profile over existing transports** (MCP, A2A, HTTP), not a new wire protocol.
