@@ -1,5 +1,7 @@
 [![PyPI](https://img.shields.io/pypi/v/sigil-profile.svg)](https://pypi.org/project/sigil-profile/)
 [![CI](https://github.com/gamai-io/sigil/actions/workflows/ci.yml/badge.svg)](https://github.com/gamai-io/sigil/actions/workflows/ci.yml)
+
+> **Live evidence dashboard:** https://gamai-io.github.io/demo/
 > **Install:** `pip install sigil-profile`
 
 # SIGIL/1 — Proof-Carrying Execution for AI Agents
