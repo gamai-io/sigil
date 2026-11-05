@@ -6,6 +6,8 @@
 
 # SIGIL/1 — Proof-Carrying Execution for AI Agents
 
+> **ProofGate Runtime v0.1** is the local claim/receipt core: [`proofgate-runtime`](https://github.com/gamai-io/proofgate-runtime). SIGIL remains the grant/anchor/MCP middleware service.
+
 SIGIL/1 is a **profile over existing transports** (MCP, A2A, HTTP), not a new wire protocol.
 It makes every consequential agent action answerable with a verifiable receipt:
 
