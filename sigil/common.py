@@ -9,7 +9,7 @@ EFFECTS = os.environ.get("SIGIL_EFFECTS", "/effects")
 CHAIN_ID = os.environ.get("SIGIL_CHAIN_ID", "lab-chain")
 
 KEY = os.environ.get("SIGIL_KEY", "").encode()
-HMAC_KEY_ID = os.environ.get("SIGIL_HMAC_KEY_ID", "lab-hmac-1")
+HMAC_KEY_ID = os.environ.get("SIGIL_HMAC_KEY_ID", "")
 ALLOW_HMAC = os.environ.get("SIGIL_ALLOW_HMAC", "0") == "1"
 KEY_ID = os.environ.get("SIGIL_KEY_ID", "gate-ed25519-1")
 RECEIPT_KEY_ID = os.environ.get("SIGIL_RECEIPT_KEY_ID", "gate-ed25519-1")
@@ -20,6 +20,31 @@ CONTROL_TOKEN_FILE = os.environ.get("SIGIL_CONTROL_TOKEN_FILE", "/run/sigil-cont
 APPROVER_TOKEN_FILE = os.environ.get("SIGIL_APPROVER_TOKEN_FILE", "/run/sigil-approver-token")
 READ_TOKEN_FILE = os.environ.get("SIGIL_READ_TOKEN_FILE", CONTROL_TOKEN_FILE)
 APPROVER_ID = os.environ.get("SIGIL_APPROVER_ID", "human:approver")
+
+_APPROVER_RE = None
+
+class ApprovalError(ValueError):
+    """APPROVAL_IDENTITY_V1: odobravatelj mora biti eksplicitan i razlicit od predlagaca."""
+
+
+def validate_approval(intent, approver=None, default=None):
+    """Vrati validan approver id ili baci ApprovalError.
+    Format: human:|agent:|service: + 1-64 [A-Za-z0-9._@-]. Zabranjeno samoodobrenje."""
+    global _APPROVER_RE
+    import re as _re
+    if _APPROVER_RE is None:
+        _APPROVER_RE = _re.compile(r"^(human|agent|service):[A-Za-z0-9._@-]{1,64}$")
+    a = str(approver or default or "").strip()
+    if not a:
+        raise ApprovalError("E_APPROVER_REQUIRED")
+    if not _APPROVER_RE.match(a):
+        raise ApprovalError("E_APPROVER_FORMAT")
+    if isinstance(intent, dict):
+        props = {str(intent.get(k) or "").strip() for k in
+                 ("proposer", "agent_id", "principal", "actor", "submitted_by")}
+        if a in props:
+            raise ApprovalError("E_SELF_APPROVAL")
+    return a
 PRINCIPAL = os.environ.get("SIGIL_PRINCIPAL", "gate-client")
 WRITE_PREFIX = os.environ.get("SIGIL_WRITE_PREFIX", "/ok")
 MAX_USES_CAP = int(os.environ.get("SIGIL_MAX_USES_CAP", "100"))

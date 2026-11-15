@@ -332,11 +332,17 @@ async def grant(req: Request):
 async def approve(req: Request):
     body = await req.json()
     intent = body.get("intent") or {}
+    try:
+        approver = C.validate_approval(intent, body.get("approver"), C.APPROVER_ID)
+    except C.ApprovalError as e:
+        return JSONResponse({"error": {"code": str(e),
+                                       "message": "approver must be explicit and differ from proposer"}},
+                            status_code=403)
     ih = C.sha(intent)
     policy = policy_for(intent)
     ph = policy_hash(policy)
     a = {"approval_id": str(uuid.uuid4()), "intent_hash": ih, "policy_hash": ph,
-         "approver": C.APPROVER_ID,
+         "approver": approver,
          "not_before": C.now_ms(),
          "not_after": C.now_ms() + min(max(int(body.get("ttl_ms", 300000)), 1), 600000),
          "nonce": uuid.uuid4().hex}
