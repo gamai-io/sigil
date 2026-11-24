@@ -139,3 +139,8 @@ Two specs are included:
 ## License
 
 Apache-2.0. See `LICENSE`.
+## Sold on its own, or inside the suite? (asked on AI Lounge, 24 Nov 2026)
+
+Both, deliberately: receipts are the unit a customer can adopt alone (a verifier is 30 lines), while
+the fleet audit is what they buy once the receipts exist. Selling only the suite would hide the one
+artefact that proves the claim; selling only receipts leaves the replay and the audit unsold.
