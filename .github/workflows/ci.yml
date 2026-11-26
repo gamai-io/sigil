@@ -26,6 +26,19 @@ jobs:
       - name: Import all modules
         run: python -c "import pkgutil,importlib,sigil; [importlib.import_module('sigil.'+m.name) for m in pkgutil.iter_modules(sigil.__path__)]; print('imports ok')"
 
+  # The image must build from a clean checkout: the wheel is built inside the
+  # image, so nothing is read from dist/ (which is gitignored). The smoke test
+  # starts the gate read-only as uid 65534 and waits for /health.
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+      - name: Build image (wheel built inside, no dist/ needed)
+        run: docker build -f deploy/Dockerfile -t sigil:ci .
+      - name: Smoke test (read-only, non-root, /health)
+        run: SIGIL_IMAGE=sigil:ci bash deploy/build.sh
+
   # Full stack suite on one Python version: gate, verify, anchor, KMS, replica,
   # three lease witnesses, MCP middleware, A2A endpoint, context gateway.
   # All keys/tokens are generated in the job; no repository secrets are used.

@@ -1,0 +1,18 @@
+# Keep the build context to what the image actually needs (pyproject.toml and
+# the sigil package). In particular, never send local runtime secrets/keys.
+.git
+.gitignore
+.github
+.venv
+**/__pycache__
+**/*.py[cod]
+*.egg-info
+build
+dist
+deploy/runtime
+tests
+examples
+*.log
+.env
+*.pem
+*.key

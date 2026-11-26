@@ -75,6 +75,24 @@ sigil-conformance --base http://127.0.0.1:18100
 
 Each service is a small FastAPI app; see `deploy/` for Docker and compose examples.
 
+## Docker image
+
+The image is self-contained: `deploy/Dockerfile` is a multi-stage build that
+packages the wheel **inside** the image from the checkout, so a fresh clone
+needs no prebuilt `dist/*.whl` (and no version is hard-coded in the Dockerfile).
+The base image is pinned by digest and the runtime runs as uid `65534`.
+
+```bash
+# build + smoke test (read-only rootfs, non-root, waits for /health)
+bash deploy/build.sh
+
+# or just build
+docker build -f deploy/Dockerfile -t sigil:0.22 .
+```
+
+CI runs the same build and smoke test in the `docker` job (5-minute cap).
+Deployment details: `deploy/PRODUCTION.md`.
+
 ## Security model (what it does and does not do)
 
 - **Does**: canonical JSON (RFC 8785), Ed25519 signatures, hash-chained receipts,
@@ -179,8 +197,9 @@ cert+config. The docker driver still uses the original `/tmp/sigil_lab` and
 
 `deploy/docker-compose.yml` is **not** sufficient for conformance: it defines
 only `kms`, `gate`, `verify`, `anchor` and `context` (no replica, no lease
-witnesses, no MCP middleware/A2A upstream), pins an image built from a wheel in
-`dist/` that a fresh clone does not have, maps services to 191xx, and sets
+witnesses, no MCP middleware/A2A upstream), builds the image from the checkout
+during `docker compose build` (the wheel is packaged inside the image — a fresh
+clone needs no `dist/` artefact), maps services to 191xx, and sets
 `SIGIL_TSA_ENABLE=0` with no remote anchor — so checks 17, 20, 24, 25–29, 40,
 48 and the MCP/A2A ones cannot pass from compose alone. That is why the CI job
 starts uvicorn processes directly instead.

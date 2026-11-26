@@ -3,12 +3,15 @@
 A profile over existing transports (MCP/A2A/HTTP), not a new wire protocol.
 Core idea: **intent → grant → decision → effect → receipt → anchor**.
 
-Install (wheel in `dist/`):
+Install from source (the repo root; `dist/` is not checked in):
 
 ```bash
-pip install sigil_profile-0.3.0-py3-none-any.whl
+pip install .                       # or: python -m build --wheel && pip install dist/*.whl
 # console scripts: sigil-gate, sigil-verify, sigil-anchor, sigil-mcp-proxy
 ```
+
+The Docker image builds that wheel inside the image, so no prebuilt artefact
+is required.
 
 SDK:
 

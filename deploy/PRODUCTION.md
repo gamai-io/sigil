@@ -4,6 +4,22 @@ Scope: hardened **tailnet-only** single-node deployment. This is **not** HA and 
 substitute for an external KMS/HSM or a consensus-replicated gate. Public ingress is
 intentionally out of scope.
 
+## Build the image
+
+The image is built from the checkout. `deploy/Dockerfile` is a multi-stage build
+that packages the wheel **inside** the image, so no prebuilt `dist/*.whl` is
+needed and no version is hard-coded in the Dockerfile. The base image is pinned
+by digest and the runtime user is `65534:65534`.
+
+```bash
+docker build -f deploy/Dockerfile -t sigil:0.22 .   # build only
+bash deploy/build.sh                                # build + read-only/non-root /health smoke test
+```
+
+`deploy/build.sh` starts the gate with `--read-only`, `--cap-drop ALL`,
+`no-new-privileges` and `--user 65534:65534`, then waits for `/health` — the
+same hardening the compose stack uses.
+
 ## Deploy
 
 ```bash
@@ -131,7 +147,9 @@ It is not write HA and does not fail over automatically.
 
 - Container healthchecks: every service has one; use `docker compose ... ps`.
 - Logs: `docker logs <container>`; json-file rotation is capped at 3 x 10 MB.
-- Upgrades: build/pin a new immutable image, back up, then `docker compose ... up -d --wait`
+- Upgrades: build a new immutable image from the checkout (`deploy/Dockerfile`;
+  the wheel is built inside it — nothing is read from `dist/`), pin it by digest,
+  back up, then `docker compose ... up -d --wait`
   and run `deploy/smoke.sh`. Roll back to the previous image tag/digest.
 - Monitor `https://.../gate/health` (`lease`, chain id), `/gate/chain/verify` and `/gate/metrics`
   (`sigil_chain_receipts`, `sigil_requests_total`, `sigil_errors_total`, `sigil_lease_valid`);
