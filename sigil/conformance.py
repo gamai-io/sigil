@@ -978,9 +978,15 @@ def run_offline(verbose: bool = True) -> dict:
     RESULTS = []
     VERBOSE = verbose
     import tempfile
-    from sigil import ctx as ctx_mod, handoff as handoff_mod, vector_check
 
     td = tempfile.mkdtemp(prefix="sigil-offline-")
+    # These modules build their store paths from SIGIL_DATA at import time, which
+    # defaults to /data — a path an unprivileged runner cannot create. Point them
+    # at the temp directory before importing.
+    os.environ.setdefault("SIGIL_DATA", td)
+    os.environ.setdefault("SIGIL_CTX_DIR", os.path.join(td, "ctx"))
+    os.environ.setdefault("SIGIL_HANDOFF_DIR", os.path.join(td, "handoffs"))
+    from sigil import ctx as ctx_mod, handoff as handoff_mod, vector_check
     try:
         pubdir = os.path.join(td, "pub"); os.makedirs(pubdir)
         effects = os.path.join(td, "effects"); os.makedirs(effects)
@@ -1075,7 +1081,12 @@ def run_offline(verbose: bool = True) -> dict:
 
         # O11 context + handoff lifecycle in a temp store
         old_ctx, old_ho = ctx_mod.ROOT, handoff_mod.ROOT
+        old_blobs, old_manifests = ctx_mod.BLOBS, ctx_mod.MANIFESTS
         ctx_mod.ROOT = os.path.join(td, "ctx"); handoff_mod.ROOT = os.path.join(td, "handoffs")
+        # BLOBS/MANIFESTS are computed at import; rebind them too or put_blob
+        # still writes to the import-time path.
+        ctx_mod.BLOBS = os.path.join(ctx_mod.ROOT, "blobs")
+        ctx_mod.MANIFESTS = os.path.join(ctx_mod.ROOT, "manifests")
         try:
             blob = ctx_mod.put_blob(b"prune-me", "text/plain")
             cid = ctx_mod.build_ctx([{"k": "a", "b": blob["blob"], "t": "text/plain"}])
@@ -1096,6 +1107,7 @@ def run_offline(verbose: bool = True) -> dict:
                   {"diff": d, "prune": pr, "handoff_prune": hp})
         finally:
             ctx_mod.ROOT, handoff_mod.ROOT = old_ctx, old_ho
+            ctx_mod.BLOBS, ctx_mod.MANIFESTS = old_blobs, old_manifests
 
         # O12 fixed vectors
         vc = vector_check.run(verbose=False)
