@@ -125,8 +125,13 @@ receipt is rejected.
 
 `sigil-conformance` exercises grants, idempotency, replay, tampering, chain breaks,
 anchor inclusion, remote anchor verification, and lease/quorum behaviour.
-The reference run used in development reports 49/49 checks passing against the
-0.22.0 package (see `docs/` and the conformance output).
+
+The reference run used in development reports 49/49 checks against 0.22.0, but that
+run is **not reproduced by CI**: the suite expects a lab stack (gate, verifier,
+anchor, KMS on :18103, replica on :18104, three lease servers, and key material
+under `/tmp/sigil_lab`), started by `sigil.conformance.start_gate`. CI runs the unit
+tests (`pytest tests/`) and `sigil-vectors`; the 49/49 figure should be treated as a
+development record until a compose-based CI job exists.
 
 ## Status
 
