@@ -123,15 +123,75 @@ receipt is rejected.
 
 ## Conformance
 
-`sigil-conformance` exercises grants, idempotency, replay, tampering, chain breaks,
-anchor inclusion, remote anchor verification, and lease/quorum behaviour.
+`sigil-conformance` runs 49 numbered checks: grants, idempotency, replay,
+tampering, chain breaks, anchor inclusion, MCP/A2A receipts, TSA, replica
+failover and lease/quorum behaviour.
 
-The reference run used in development reports 49/49 checks against 0.22.0, but that
-run is **not reproduced by CI**: the suite expects a lab stack (gate, verifier,
-anchor, KMS on :18103, replica on :18104, three lease servers, and key material
-under `/tmp/sigil_lab`), started by `sigil.conformance.start_gate`. CI runs the unit
-tests (`pytest tests/`) and `sigil-vectors`; the 49/49 figure should be treated as a
-development record until a compose-based CI job exists.
+There are two honest, separately reported suites:
+
+| Command | What it runs | Needs | Result CI reproduces |
+|---|---|---|---|
+| `pytest -q tests/ --ignore=tests/test_conformance_stack.py` | 7 unit tests + `run_offline()` | nothing (temp dir) | **8 passed** (7 unit + 1 offline test); CI matrix runs it on 3.10 and 3.12 |
+| `python -m sigil.conformance --offline` | 12 library checks `O1`–`O12` | nothing (temp dir) | **12/12 passed** |
+| `sigil-vectors` | 13 fixed vectors | nothing | **13/13 passed** |
+| `pytest -q tests/test_conformance_stack.py -s` | stack checks `1`–`49` | gate/verify/anchor/KMS/replica/3 lease witnesses/MCP middleware/A2A/context gateway | **46 passed, 0 failed, 3 skipped** of 49 (~60 s, Python 3.12) |
+
+Measured on 2026-11-26 with Python 3.12.3, Linux x86_64, in a fresh clone
+(`SIGIL_CI_PORT_BASE=18300` was used locally because a host service already
+held :18100; CI uses the defaults). The 3.10 leg is the CI matrix only — it was
+not re-run on the machine where these numbers were taken. The stack job
+generates all Ed25519/P-256 keys, control/approver/lease tokens and a
+throw-away RFC3161 TSA certificate in the job — **no repository secrets and no
+pre-existing `/tmp/sigil_lab`**.
+
+The three skips are explicit, not silent passes:
+
+| # | Check | Why it cannot run in CI |
+|---|---|---|
+| 17 | `anchor.remote_anchor` | The development lab pointed the anchor at an Oracle-hosted second anchor that stamps `node: "remote"`. That service is not in this repo and not in `deploy/docker-compose.yml`. Enable with `SIGIL_CONFORMANCE_REMOTE_ANCHOR` + a matching anchor. |
+| 21 | `keys.isolation` | Asserts gate/anchor/verify cannot see private keys through container mounts. A process runner cannot prove container isolation, so it is skipped rather than faked. It runs under the docker lab driver. |
+| 24 | `anchor.public_rfc3161` | Third-party FreeTSA (`https://freetsa.org/tsr`) needs network and CA/cert files that are not in the repo. Enable with `SIGIL_CONFORMANCE_PUBLIC_TSA=1` after installing those files. |
+
+### What needs what
+
+| Service (default port) | Checks that need it | CI-feasible |
+|---|---|---|
+| gate :18100 | 3–16, 18–20, 22–23, 25–29, 31–45, 47–49 | **yes** (uvicorn, generated keys) |
+| verify :18101 | 1, 2, 8–11, 15, 16, 36, 43 | **yes** |
+| anchor :18102 + local TSA | 11, 17, 20, 24, 41, 42 | **yes** for local TSA; **no** for 17/24 |
+| KMS :18103 | signing for every executed receipt; 47 rotation; 21 isolation | **yes** for signing/rotation; **no** for isolation without containers |
+| replica :18104 | 25, 26 | **yes** |
+| lease witnesses :18106–18108 | 27–29, 40, 48 | **yes** |
+| MCP middleware :18110 + upstream :18080 | 18, 22, 23, 39, 45 | **yes** (small upstream fixture in the test) |
+| A2A endpoint :18082 | 19 | **yes** (fixture uses `sigil.a2a`) |
+| context gateway :18120 | 44 | **yes** |
+| P-256 key file (no service) | 30 | **yes** (generated in job) |
+| external Oracle anchor | 17 | **no** — service not in repo |
+| public FreeTSA | 24 | **no** — third party + missing CA files |
+| container key isolation | 21 | **no** — requires mount namespaces/`docker exec` |
+
+Files the suite needs are generated per run under a temp dir
+(`SIGIL_CONFORMANCE_KEYS/EFFECTS/DATA`): gate/anchor Ed25519 keys, a P-256
+signer, a lease witness key shared by the three witnesses, control/approver/
+lease/KMS tokens, `lease_public.pem`, `p256_cloud_public.pem`, and a local TSA
+cert+config. The docker driver still uses the original `/tmp/sigil_lab` and
+`/tmp/gama_proto_lab/{sigil,deps}` layout.
+
+`deploy/docker-compose.yml` is **not** sufficient for conformance: it defines
+only `kms`, `gate`, `verify`, `anchor` and `context` (no replica, no lease
+witnesses, no MCP middleware/A2A upstream), pins an image built from a wheel in
+`dist/` that a fresh clone does not have, maps services to 191xx, and sets
+`SIGIL_TSA_ENABLE=0` with no remote anchor — so checks 17, 20, 24, 25–29, 40,
+48 and the MCP/A2A ones cannot pass from compose alone. That is why the CI job
+starts uvicorn processes directly instead.
+
+Checks 7, 25, 27, 29 and 40 are timing-sensitive by nature: they stop/restart
+gate or witness processes and wait for lease expiry (check 29 alone is ~30 s
+because `execute()` retries 503 for up to 12 s). The suite waits on health
+endpoints rather than fixed sleeps where possible, but these five are the ones
+to suspect first if the job flakes; they are not reported green unless the
+observed state matches. The stack job runs on Python 3.12 only to keep CI
+under ~5 minutes; the offline suite runs on 3.10 and 3.12.
 
 ## Status
 

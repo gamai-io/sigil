@@ -120,9 +120,14 @@ Hashes: `intent_hash = SHA-256(JCS(intent + contract))`, `route_hash = SHA-256(J
 
 ## Conformance
 
-`python -m sigil.conformance` → **30/30** (twice, plus packaged wheel run). Import-safe API: `from sigil.conformance import run; run(verbose=False)`.
-Tests 16–30 cover Ed25519, remote Oracle anchor, MCP tools/resources/prompts, A2A metadata, local + public RFC3161, KMS isolation, replica read failover/auto-sync, write failover with lease fencing, and the lease witness.
-Spec: `SIGIL_SPEC_1.0.md` (also shipped as `sigil/SPEC.md`); report `docs/SPEC.md`.
+`python -m sigil.conformance --offline` → **12/12** library checks (no services).
+The stack suite is 49 numbered checks; CI starts the services itself and
+reproduces **46 passed, 0 failed, 3 skipped** (17 remote Oracle anchor, 21
+container key isolation, 24 public FreeTSA). Exact commands, per-service
+requirements and the skip reasons are in the root `README.md`; the previous
+"30/30" line was a stale development record.
+Import-safe API: `from sigil.conformance import run; run(verbose=False)`
+(add a `driver=` to control gate/standby/witness lifecycle).
 
 ## Limits (honest)
 
