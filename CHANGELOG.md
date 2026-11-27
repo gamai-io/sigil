@@ -1,4 +1,15 @@
 # Changelog
+## [0.22.3] - 2026-11-27
+
+### Security
+- **`/verify` refuses ambiguous JSON.** `{"a":1,"a":2}` parses to `{"a":2}` in Python,
+  JavaScript and Go, so a receipt could cover one value and a verifier read another.
+  The endpoint now parses the raw body strictly and answers
+  `E_JSON_DUPLICATE_KEY`, `E_JSON_NON_FINITE`, `E_JSON_INT_RANGE`,
+  `E_JSON_LONE_SURROGATE`, `E_JSON_DEPTH` or `E_JSON_INVALID_UTF8` before any hash is
+  computed. Same rules as `gama-mandate`; idea from Tracekit's `loads_strict` (MIT).
+- Error details escape non-ASCII, so a refusal cannot itself fail to serialise.
+
 
 ## [0.22.2] - 2026-11-26
 

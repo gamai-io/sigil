@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 import uvicorn
 from . import common as C
+from . import strictjson
 from . import tsa as T
 
 app = FastAPI(title="sigil-verify")
@@ -23,7 +24,16 @@ async def canonical(req: Request):
 
 @app.post("/verify")
 async def verify(req: Request):
-    body = await req.json()
+    # a receipt that two JSON parsers read differently cannot be verified: refuse it
+    # before any hash is computed instead of silently taking the last duplicate key
+    try:
+        body = strictjson.loads_strict(await req.body())
+    except strictjson.StrictJSONError as exc:
+        return JSONResponse({"valid": False, "error": {"code": "E_JSON_" + exc.code.upper(),
+                                                       "message": str(exc)}},
+                            status_code=200)
+    if not isinstance(body, dict):
+        return err("E_JSON_SHAPE", "the body must be one JSON object")
     rec = body.get("receipt") or {}
     errors = []
     core = {k: v for k, v in rec.items() if k not in ("sig", "anchor")}
